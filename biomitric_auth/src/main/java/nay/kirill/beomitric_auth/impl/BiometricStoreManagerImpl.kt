@@ -25,7 +25,7 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
     override fun authenticate(
         activity: FragmentActivity,
         onSuccess: () -> Unit,
-        onFailed: (error: BiometricStoreManager.AuthError) -> Unit
+        onFailed: (error: Throwable) -> Unit
     ) {
         val promptInfo = createPromptInfo(activity, biometricType = BiometricType.SECOND_CLASS)
         val biometricPrompt = createBiometricPrompt(activity, onSuccess = { onSuccess.invoke() }, onFailed)
@@ -36,17 +36,22 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         activity: FragmentActivity,
         text: String,
         onSuccess: () -> Unit,
-        onFailed: (error: BiometricStoreManager.AuthError) -> Unit
+        onFailed: (error: Throwable) -> Unit
     ) {
         val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
         val biometricPrompt = createBiometricPrompt(
             activity = activity,
             onSuccess = { cipher ->
-                val encryptedData = CryptographyManager.processCypher(text, cipher)
+                when (cipher) {
+                    null -> onFailed.invoke(EmptyCipherException())
+                    else -> {
+                        val encryptedData = CryptographyManager.processCypher(text, cipher)
 
-                activity.lifecycleScope.launchWhenCreated {
-                    DataStorage(context = activity).saveData(data = encryptedData)
-                    onSuccess.invoke()
+                        activity.lifecycleScope.launchWhenCreated {
+                            DataStorage(context = activity).saveData(data = encryptedData)
+                            onSuccess.invoke()
+                        }
+                    }
                 }
             },
             onFailed = onFailed
@@ -59,16 +64,21 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
     override fun decryptWithBiometric(
         activity: FragmentActivity,
         onSuccess: (decryptedText: String) -> Unit,
-        onFailed: (error: BiometricStoreManager.AuthError) -> Unit
+        onFailed: (error: Throwable) -> Unit
     ) {
         val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
         val biometricPrompt = createBiometricPrompt(
             activity = activity,
             onSuccess = { cipher ->
-                activity.lifecycleScope.launchWhenCreated {
-                    DataStorage(context = activity).getData().collect { encryptedText ->
-                        val decryptedText = CryptographyManager.processCypher(encryptedText, cipher)
-                        onSuccess.invoke(decryptedText)
+                when (cipher) {
+                    null -> onFailed.invoke(EmptyCipherException())
+                    else -> {
+                        activity.lifecycleScope.launchWhenCreated {
+                            DataStorage(context = activity).getData().collect { encryptedText ->
+                                val decryptedText = CryptographyManager.processCypher(encryptedText, cipher)
+                                onSuccess.invoke(decryptedText)
+                            }
+                        }
                     }
                 }
             },
@@ -81,18 +91,18 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
 
     private fun createBiometricPrompt(
         activity: FragmentActivity,
-        onSuccess: (Cipher) -> Unit,
-        onFailed: (error: BiometricStoreManager.AuthError) -> Unit
+        onSuccess: (Cipher?) -> Unit,
+        onFailed: (error: Throwable) -> Unit
     ): BiometricPrompt {
         val executor = ContextCompat.getMainExecutor(activity)
 
         val callback = object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                result.cryptoObject?.cipher?.let(onSuccess)
+                onSuccess.invoke(result.cryptoObject?.cipher)
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                onFailed.invoke(BiometricStoreManager.AuthError(errorCode = errorCode, message = errString.toString()))
+                onFailed.invoke(BiometricAuthException(errorMessage = errString.toString()))
             }
         }
 
@@ -111,5 +121,10 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
             setAllowedAuthenticators(biometricType.authenticator)
         }
         .build()
+
+    class EmptyCipherException : IllegalStateException("Cipher can't be null")
+
+    class BiometricAuthException(errorMessage: String) :
+        IllegalStateException("Biometric authentication failed with message: $errorMessage")
 
 }

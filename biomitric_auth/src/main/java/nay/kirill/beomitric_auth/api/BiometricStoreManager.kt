@@ -3,6 +3,7 @@ package nay.kirill.beomitric_auth.api
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import nay.kirill.beomitric_auth.impl.BiometricStoreManagerImpl
+import java.lang.IllegalStateException
 
 /**
  * Provides API for using biometric authentication capabilities
@@ -25,7 +26,7 @@ interface BiometricStoreManager {
     fun authenticate(
         activity: FragmentActivity,
         onSuccess: () -> Unit,
-        onFailed: (error: AuthError) -> Unit = { }
+        onFailed: (error: Throwable) -> Unit = { }
     )
 
     /**
@@ -36,7 +37,7 @@ interface BiometricStoreManager {
         activity: FragmentActivity,
         text: String,
         onSuccess: () -> Unit = { },
-        onFailed: (error: AuthError) -> Unit = { }
+        onFailed: (error: Throwable) -> Unit = { }
     )
 
     /**
@@ -45,12 +46,7 @@ interface BiometricStoreManager {
     fun decryptWithBiometric(
         activity: FragmentActivity,
         onSuccess: (decryptedText: String) -> Unit,
-        onFailed: (error: AuthError) -> Unit = { }
-    )
-
-    data class AuthError(
-        val errorCode: Int,
-        val message: String
+        onFailed: (error: Throwable) -> Unit = { }
     )
 
     companion object {
