@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="android_biometric_dialog_title" formatted="false">Вход в приложение</string>
+    <string name="android_biometric_dialog_description" formatted="false">Воспользуйтесь биометрическими данными для входа</string>
+    <string name="android_biometric_dialog_negative_button" formatted="false">Отмена</string>
+</resources>
