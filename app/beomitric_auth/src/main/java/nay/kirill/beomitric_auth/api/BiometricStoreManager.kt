@@ -1,8 +1,8 @@
-package nay.kirill.beomitric_auth
+package nay.kirill.beomitric_auth.api
 
-import android.app.Activity
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
+import nay.kirill.beomitric_auth.impl.BiometricStoreManagerImpl
 
 /**
  * Provides API for using biometric authentication capabilities
@@ -32,5 +32,9 @@ interface BiometricStoreManager {
         val errorCode: Int,
         val message: String
     )
+
+    companion object {
+        fun create(): BiometricStoreManager = BiometricStoreManagerImpl()
+    }
 
 }

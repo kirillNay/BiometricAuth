@@ -1,4 +1,4 @@
-package nay.kirill.beomitric_auth
+package nay.kirill.beomitric_auth.api
 
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK

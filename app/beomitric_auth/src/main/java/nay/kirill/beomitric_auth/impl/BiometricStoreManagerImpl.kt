@@ -1,13 +1,16 @@
-package nay.kirill.beomitric_auth
+package nay.kirill.beomitric_auth.impl
 
 import android.content.Context
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import nay.kirill.beomitric_auth.R
+import nay.kirill.beomitric_auth.api.BiometricStoreManager
+import nay.kirill.beomitric_auth.api.BiometricType
 import javax.crypto.Cipher
 
-class BiometricStoreManagerImpl : BiometricStoreManager {
+internal class BiometricStoreManagerImpl : BiometricStoreManager {
 
     override fun isBiometricAvailable(
         context: Context,
