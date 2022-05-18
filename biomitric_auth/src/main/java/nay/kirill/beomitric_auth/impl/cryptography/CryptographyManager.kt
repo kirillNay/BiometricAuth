@@ -5,12 +5,10 @@ import javax.crypto.Cipher
 
 internal object CryptographyManager {
 
-    fun encryptData(text: String, cipher: Cipher): ByteArray =
-        cipher.doFinal(text.toByteArray(Charset.forName("UTF-8")))
+    fun processCypher(data: String, cipher: Cipher): String = cipher.doFinal(data.asByteArray()).asString()
 
-    fun decryptData(data: ByteArray, cipher: Cipher): String {
-        val plaintext = cipher.doFinal(data)
-        return String(plaintext, Charset.forName("UTF-8"))
-    }
+    private fun String.asByteArray() = toByteArray(Charset.forName("UTF-8"))
+
+    private fun ByteArray.asString() = String(this, Charset.forName("UTF-8"))
 
 }

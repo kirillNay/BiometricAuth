@@ -5,11 +5,14 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.collect
 import nay.kirill.beomitric_auth.R
 import nay.kirill.beomitric_auth.api.BiometricStoreManager
 import nay.kirill.beomitric_auth.api.BiometricType
 import nay.kirill.beomitric_auth.impl.cryptography.CipherManager
 import nay.kirill.beomitric_auth.impl.cryptography.CryptographyManager
+import nay.kirill.beomitric_auth.impl.storage.DataStorage
 import javax.crypto.Cipher
 
 internal class BiometricStoreManagerImpl : BiometricStoreManager {
@@ -39,11 +42,12 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         val biometricPrompt = createBiometricPrompt(
             activity = activity,
             onSuccess = { cipher ->
-                CryptographyManager.encryptData(text, cipher)
+                val encryptedData = CryptographyManager.processCypher(text, cipher)
 
-
-
-                onSuccess.invoke()
+                activity.lifecycleScope.launchWhenCreated {
+                    DataStorage(context = activity).saveData(data = encryptedData)
+                    onSuccess.invoke()
+                }
             },
             onFailed = onFailed
         )
@@ -61,7 +65,12 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         val biometricPrompt = createBiometricPrompt(
             activity = activity,
             onSuccess = { cipher ->
-
+                activity.lifecycleScope.launchWhenCreated {
+                    DataStorage(context = activity).getData().collect { encryptedText ->
+                        val decryptedText = CryptographyManager.processCypher(encryptedText, cipher)
+                        onSuccess.invoke(decryptedText)
+                    }
+                }
             },
             onFailed = onFailed
         )
