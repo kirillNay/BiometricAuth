@@ -41,7 +41,7 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
             onSuccess = { cipher ->
                 CryptographyManager.encryptData(text, cipher)
 
-                // TODO save encrypted data
+
 
                 onSuccess.invoke()
             },
@@ -61,7 +61,7 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         val biometricPrompt = createBiometricPrompt(
             activity = activity,
             onSuccess = { cipher ->
-                //TODO get saved data
+
             },
             onFailed = onFailed
         )
