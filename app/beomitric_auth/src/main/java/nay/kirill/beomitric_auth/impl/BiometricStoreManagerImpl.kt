@@ -8,6 +8,8 @@ import androidx.fragment.app.FragmentActivity
 import nay.kirill.beomitric_auth.R
 import nay.kirill.beomitric_auth.api.BiometricStoreManager
 import nay.kirill.beomitric_auth.api.BiometricType
+import nay.kirill.beomitric_auth.impl.cryptography.CipherManager
+import nay.kirill.beomitric_auth.impl.cryptography.CryptographyManager
 import javax.crypto.Cipher
 
 internal class BiometricStoreManagerImpl : BiometricStoreManager {
@@ -25,6 +27,47 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         val promptInfo = createPromptInfo(activity, biometricType = BiometricType.SECOND_CLASS)
         val biometricPrompt = createBiometricPrompt(activity, onSuccess = { onSuccess.invoke() }, onFailed)
         biometricPrompt.authenticate(promptInfo)
+    }
+
+    override fun encryptWithBiometric(
+        activity: FragmentActivity,
+        text: String,
+        onSuccess: () -> Unit,
+        onFailed: (error: BiometricStoreManager.AuthError) -> Unit
+    ) {
+        val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
+        val biometricPrompt = createBiometricPrompt(
+            activity = activity,
+            onSuccess = { cipher ->
+                CryptographyManager.encryptData(text, cipher)
+
+                // TODO save encrypted data
+
+                onSuccess.invoke()
+            },
+            onFailed = onFailed
+        )
+        val cipher = CipherManager.getCipher(cryptographyMode = CipherManager.CryptographyMode.ENCRYPTION)
+
+        biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
+    }
+
+    override fun decryptWithBiometric(
+        activity: FragmentActivity,
+        onSuccess: (decryptedText: String) -> Unit,
+        onFailed: (error: BiometricStoreManager.AuthError) -> Unit
+    ) {
+        val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
+        val biometricPrompt = createBiometricPrompt(
+            activity = activity,
+            onSuccess = { cipher ->
+                //TODO get saved data
+            },
+            onFailed = onFailed
+        )
+        val cipher = CipherManager.getCipher(cryptographyMode = CipherManager.CryptographyMode.DECRYPTION)
+
+        biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
     }
 
     private fun createBiometricPrompt(

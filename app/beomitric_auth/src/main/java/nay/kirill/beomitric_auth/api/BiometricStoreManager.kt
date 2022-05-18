@@ -25,7 +25,27 @@ interface BiometricStoreManager {
     fun authenticate(
         activity: FragmentActivity,
         onSuccess: () -> Unit,
-        onFailed: (error: AuthError) -> Unit
+        onFailed: (error: AuthError) -> Unit = { }
+    )
+
+    /**
+     * Used to encrypt data via biometric authentication
+     * @param text is text needed to encrypt
+     */
+    fun encryptWithBiometric(
+        activity: FragmentActivity,
+        text: String,
+        onSuccess: () -> Unit = { },
+        onFailed: (error: AuthError) -> Unit = { }
+    )
+
+    /**
+     * Used to decrypt data via biometric authentication
+     */
+    fun decryptWithBiometric(
+        activity: FragmentActivity,
+        onSuccess: (decryptedText: String) -> Unit,
+        onFailed: (error: AuthError) -> Unit = { }
     )
 
     data class AuthError(
