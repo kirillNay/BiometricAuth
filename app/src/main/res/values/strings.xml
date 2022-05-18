@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">BiometricAuthDemo</string>
     <string name="authenticate_button">Подтвердить личность</string>
+    <string name="encrypt_button">Зашифровать текст</string>
+    <string name="decrypt_button">Расшифровать текст</string>
+    <string name="encryption_text_hint">Введите текст для шифрования</string>
     <string name="biometric_unavailable">Биометрия недоступна!</string>
 </resources>
