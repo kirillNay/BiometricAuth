@@ -75,8 +75,12 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
                     else -> {
                         activity.lifecycleScope.launchWhenCreated {
                             DataStorage(context = activity).getData().collect { encryptedText ->
-                                val decryptedText = CryptographyManager.processCypher(encryptedText, cipher)
-                                onSuccess.invoke(decryptedText)
+                                if (encryptedText == null) {
+                                    onFailed.invoke(EmptyDataToDecryptException())
+                                } else {
+                                    val decryptedText = CryptographyManager.processCypher(encryptedText, cipher)
+                                    onSuccess.invoke(decryptedText)
+                                }
                             }
                         }
                     }
@@ -121,6 +125,8 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
             setAllowedAuthenticators(biometricType.authenticator)
         }
         .build()
+
+    class EmptyDataToDecryptException : IllegalStateException("No data has been encrypted yet")
 
     class EmptyCipherException : IllegalStateException("Cipher can't be null")
 

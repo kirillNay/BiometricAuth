@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 
 internal class DataStorage(
@@ -23,6 +24,6 @@ internal class DataStorage(
         context.dataStore.edit { pref -> pref[ENCRYPTED_DATA_KEY] = data }
     }
 
-    fun getData(): Flow<String> = context.dataStore.data.mapNotNull { pref -> pref[ENCRYPTED_DATA_KEY] }
+    fun getData(): Flow<String?> = context.dataStore.data.map { pref -> pref[ENCRYPTED_DATA_KEY] }
 
 }
