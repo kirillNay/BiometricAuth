@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">BiometricAuthDemo</string>
+    <string name="authenticate_button">Подтвердить личность</string>
+    <string name="biometric_unavailable">Биометрия недоступна!</string>
 </resources>
