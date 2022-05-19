@@ -42,16 +42,19 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         val biometricPrompt = createBiometricPrompt(
             activity = activity,
             onSuccess = { cipher ->
-                when (cipher) {
-                    null -> onFailed.invoke(EmptyCipherException())
-                    else -> {
-                        val encryptedData = CryptographyManager.processCypher(text, cipher)
+                try {
+                    if (cipher == null) throw EmptyCipherException()
 
-                        activity.lifecycleScope.launchWhenCreated {
-                            DataStorage(context = activity).saveData(data = encryptedData)
-                            onSuccess.invoke()
-                        }
+                    val encryptedValue = CryptographyManager.processCypher(text, cipher)
+                    val initializeVector = cipher.iv.asString()
+
+                    activity.lifecycleScope.launchWhenCreated {
+                        DataStorage(context = activity)
+                            .saveData(data = DataStorage.EncryptedData(encryptedValue, initializeVector))
+                        onSuccess.invoke()
                     }
+                } catch (e: Throwable) {
+                    onFailed.invoke(e)
                 }
             },
             onFailed = onFailed
@@ -66,31 +69,36 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         onSuccess: (decryptedText: String) -> Unit,
         onFailed: (error: Throwable) -> Unit
     ) {
-        val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
-        val biometricPrompt = createBiometricPrompt(
-            activity = activity,
-            onSuccess = { cipher ->
-                when (cipher) {
-                    null -> onFailed.invoke(EmptyCipherException())
-                    else -> {
-                        activity.lifecycleScope.launchWhenCreated {
-                            DataStorage(context = activity).getData().collect { encryptedText ->
-                                if (encryptedText == null) {
-                                    onFailed.invoke(EmptyDataToDecryptException())
-                                } else {
-                                    val decryptedText = CryptographyManager.processCypher(encryptedText, cipher)
+        activity.lifecycleScope.launchWhenCreated {
+            DataStorage(context = activity).getData().collect { encryptedData ->
+                try {
+                    if (encryptedData == null) throw EmptyDataToDecryptException()
+
+                    val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
+
+                    val biometricPrompt = createBiometricPrompt(
+                        activity = activity,
+                        onSuccess = { cipher ->
+                            when (cipher) {
+                                null -> onFailed.invoke(EmptyCipherException())
+                                else -> {
+                                    val decryptedText = CryptographyManager.processCypher(encryptedData.encryptedValue, cipher)
                                     onSuccess.invoke(decryptedText)
                                 }
                             }
-                        }
-                    }
+                        },
+                        onFailed = onFailed
+                    )
+                    val authenticateCipher = CipherManager.getCipher(
+                        cryptographyMode = CipherManager.CryptographyMode.DECRYPTION,
+                        initializeVector = encryptedData.initializeVector.asByteArray()
+                    )
+                    biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(authenticateCipher))
+                } catch (e: Throwable) {
+                    onFailed.invoke(e)
                 }
-            },
-            onFailed = onFailed
-        )
-        val cipher = CipherManager.getCipher(cryptographyMode = CipherManager.CryptographyMode.DECRYPTION)
-
-        biometricPrompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
+            }
+        }
     }
 
     private fun createBiometricPrompt(

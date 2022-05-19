@@ -9,6 +9,7 @@ import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 
 internal object CipherManager {
@@ -18,18 +19,20 @@ internal object CipherManager {
     private const val KEY_SIZE = 256
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
 
-    private val INITIALIZE_VECTOR = ByteArray(16)
-
     private object EncryptionConst {
         const val ENCRYPTION_BLOCK_MODE = KeyProperties.BLOCK_MODE_GCM
         const val ENCRYPTION_PADDING = KeyProperties.ENCRYPTION_PADDING_NONE
         const val ENCRYPTION_ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
     }
 
-    fun getCipher(cryptographyMode: CryptographyMode): Cipher {
+    fun getCipher(cryptographyMode: CryptographyMode, initializeVector: ByteArray? = null): Cipher {
         val cipher = createCipher()
         val secretKey = getOrCreateSecretKey(SECRET_KEY)
-        cipher.init(cryptographyMode.cipherMode, secretKey, IvParameterSpec(INITIALIZE_VECTOR))
+        when (initializeVector) {
+            null -> cipher.init(cryptographyMode.cipherMode, secretKey)
+            else -> cipher.init(cryptographyMode.cipherMode, secretKey, GCMParameterSpec(128, initializeVector))
+        }
+
         return cipher
     }
 
