@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.collect
 import nay.kirill.beomitric_auth.R
 import nay.kirill.beomitric_auth.api.BiometricStoreManager
 import nay.kirill.beomitric_auth.api.BiometricType
+import nay.kirill.beomitric_auth.impl.biometric.BiometricUtils
 import nay.kirill.beomitric_auth.impl.cryptography.CipherManager
 import nay.kirill.beomitric_auth.impl.cryptography.CryptographyManager
 import nay.kirill.beomitric_auth.impl.storage.DataStorage
@@ -27,8 +28,8 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         onSuccess: () -> Unit,
         onFailed: (error: Throwable) -> Unit
     ) {
-        val promptInfo = createPromptInfo(activity, biometricType = BiometricType.SECOND_CLASS)
-        val biometricPrompt = createBiometricPrompt(activity, onSuccess = { onSuccess.invoke() }, onFailed)
+        val promptInfo = BiometricUtils.createPromptInfo(activity, biometricType = BiometricType.SECOND_CLASS)
+        val biometricPrompt = BiometricUtils.createBiometricPrompt(activity, onSuccess = { onSuccess.invoke() }, onFailed)
         biometricPrompt.authenticate(promptInfo)
     }
 
@@ -38,8 +39,8 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
         onSuccess: () -> Unit,
         onFailed: (error: Throwable) -> Unit
     ) {
-        val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
-        val biometricPrompt = createBiometricPrompt(
+        val promptInfo = BiometricUtils.createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
+        val biometricPrompt = BiometricUtils.createBiometricPrompt(
             activity = activity,
             onSuccess = { cipher ->
                 try {
@@ -74,9 +75,9 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
                 try {
                     if (encryptedData == null) throw EmptyDataToDecryptException()
 
-                    val promptInfo = createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
+                    val promptInfo = BiometricUtils.createPromptInfo(activity, biometricType = BiometricType.FIRST_CLASS)
 
-                    val biometricPrompt = createBiometricPrompt(
+                    val biometricPrompt = BiometricUtils.createBiometricPrompt(
                         activity = activity,
                         onSuccess = { cipher ->
                             when (cipher) {
@@ -100,39 +101,6 @@ internal class BiometricStoreManagerImpl : BiometricStoreManager {
             }
         }
     }
-
-    private fun createBiometricPrompt(
-        activity: FragmentActivity,
-        onSuccess: (Cipher?) -> Unit,
-        onFailed: (error: Throwable) -> Unit
-    ): BiometricPrompt {
-        val executor = ContextCompat.getMainExecutor(activity)
-
-        val callback = object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                onSuccess.invoke(result.cryptoObject?.cipher)
-            }
-
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                onFailed.invoke(BiometricAuthException(errorMessage = errString.toString()))
-            }
-        }
-
-        return BiometricPrompt(activity, executor, callback)
-    }
-
-    private fun createPromptInfo(
-        context: Context,
-        biometricType: BiometricType
-    ): BiometricPrompt.PromptInfo = BiometricPrompt.PromptInfo.Builder()
-        .apply {
-            setTitle(context.getString(R.string.android_biometric_dialog_title))
-            setDescription(context.getString(R.string.android_biometric_dialog_description))
-            setConfirmationRequired(false)
-            setNegativeButtonText(context.getString(R.string.android_biometric_dialog_negative_button))
-            setAllowedAuthenticators(biometricType.authenticator)
-        }
-        .build()
 
     class EmptyDataToDecryptException : IllegalStateException("No data has been encrypted yet")
 
